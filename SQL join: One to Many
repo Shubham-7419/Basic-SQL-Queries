@@ -1,0 +1,138 @@
+USE joins;
+
+-- Stupid way of doing SQL
+-- Trying to find the primary key of the record so that we can get information from foreign key
+SELECT * FROM customers WHERE last_name ='george';
+
+-- Viewing order from the identified primary key
+SELECT * FROM orders WHERE customer_id = 1;
+
+SELECT * FROM orders WHERE customer_id = (SELECT id FROM customers WHERE last_name ='george');
+
+-- To perform a (kind of useless) cross join:
+SELECT * FROM customers, orders;
+
+
+-- Smarter Way
+-- Inner Join
+SELECT * FROM customers
+JOIN orders
+	ON customers.id = orders.customer_id;
+    
+-- Using GROUP BY with Inner Join
+SELECT 
+    first_name, last_name, SUM(amount) AS total
+FROM
+    customers
+        JOIN
+    orders ON customers.id = orders.customer_id
+GROUP BY customers.first_name , customers.last_name
+ORDER BY total;
+
+
+-- LEFT JOIN
+-- Here Customers is the left side as it was mentioned first and orders is the right from which we are joining our left side
+SELECT
+	first_name , last_name , order_date , amount
+FROM customers
+LEFT JOIN orders
+	ON customers.id = orders.customer_id;
+    
+-- Using Group by with left join and also using IFNULL
+SELECT 
+    first_name, last_name, IFNULL(SUM(amount), 0)
+FROM
+    customers
+        LEFT JOIN
+		orders ON customers.id = orders.customer_id
+GROUP BY first_name , last_name;
+
+
+-- RIGHT JOIN
+-- But now here we have a problem as we dont have any order without customer id as our schema is set up like that we have to enter a valid id but
+-- just for example sake I have made that column nullable so that we can see the right join so lets first enter a new record
+INSERT INTO orders (amount,order_date) VALUES (100, CURDATE());
+-- RIGHT JOIN
+-- Here Orders is the left side as it was mentioned first and Customers is the right from which we are joining our left side
+SELECT 
+    first_name, last_name, order_date , amount
+FROM
+    orders
+        RIGHT JOIN
+		customers ON customers.id = orders.customer_id;
+        
+
+-- JOIN EXCERCISE
+-- Creating table and Inserting Data
+CREATE TABLE students
+	(
+		id INT PRIMARY KEY AUTO_INCREMENT,
+		first_name VARCHAR(50)
+	);
+CREATE TABLE papers
+	(
+		title VARCHAR(500),
+        grade INT,
+        student_id INT,
+		FOREIGN KEY (student_id) REFERENCES students(id)
+	);
+    
+INSERT INTO students (first_name) VALUES 
+('Caleb'), ('Samantha'), ('Raj'), ('Carlos'), ('Lisa');
+ 
+INSERT INTO papers (student_id, title, grade ) VALUES
+(1, 'My First Book Report', 60),
+(1, 'My Second Book Report', 75),
+(2, 'Russian Lit Through The Ages', 94),
+(2, 'De Montaigne and The Art of The Essay', 98),
+(4, 'Borges and Magical Realism', 89);
+
+-- 1. Excercise: First name of every student with title of paper and grade received by them in Desc order.
+SELECT 
+    first_name, title, grade
+FROM
+    students
+        JOIN
+    papers ON students.id = papers.student_id
+ORDER BY grade DESC;
+
+-- 2. Excercise: First name of every student with title of paper and grade received by them but with null values of papers.
+SELECT
+	 first_name, title, grade
+FROM
+    students
+		LEFT JOIN
+        papers ON students.id = papers.student_id
+;
+
+-- 3. Excercise: First name of every student with title of paper and grade received by them but replacing null values of papers.
+SELECT
+	 first_name, IFNULL(title,'Missing'), IFNULL(grade,0)
+FROM
+    students
+		LEFT JOIN
+        papers ON students.id = papers.student_id
+;
+
+-- 4. Excercise: Average grade Received by each student
+SELECT 
+    first_name, IFNULL(AVG(grade), 0) AS average
+FROM
+    students
+        LEFT JOIN
+    papers ON students.id = papers.student_id
+GROUP BY first_name;
+
+-- 5. Excercise: Passing status based on average grade Received by each student passing criteria is 75.
+SELECT 
+    first_name, IFNULL(AVG(grade), 0) AS average,
+		CASE
+			WHEN IFNULL(AVG(grade), 0) >= 75 THEN 'passing'
+            ELSE 'failing'
+		END AS passing_status
+FROM
+    students
+        LEFT JOIN
+    papers ON students.id = papers.student_id
+GROUP BY first_name
+ORDER BY average DESC;
