@@ -16,3 +16,5 @@ This repository contains a collection of basic SQL queries and exercises to help
 11. Altering table and columns in SQL
 12. Keys in table
 13. Different types of Joins
+14. VIEW in SQL
+15. HAVING and ROLLUP in SQL
